@@ -1,0 +1,26 @@
+{
+    "styles":[
+        {
+            "href": "https://cdn.guardapp.nl/lib/bootstrap-5.3.3/css/bootstrap.min.css",
+            "integrity": "sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        },
+        {
+            "href": "https://cdn.guardapp.nl/lib/bootstrap-icons-1.11.3/font/bootstrap-icons.min.css",
+            "integrity": "sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+"
+        },
+        {
+            "href": "https://cdn.guardapp.nl/fonts/guard-fonts.css",
+            "integrity": "sha384-dGAWHG1EftMgSgpRXhYN8EKGpj8osrQCh7qbYIOAW7T3aP9uJ81LF1lVrqKcyFzf"
+        }
+    ],
+    "scripts": [
+        {
+            "src": "https://cdn.guardapp.nl/lib/jquery-3.7.1/jquery-3.7.1.min.js",
+            "integrity": "sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs"
+        },
+        {
+            "src": "https://cdn.guardapp.nl/lib/bootstrap-5.3.3/js/bootstrap.bundle.min.js",
+            "integrity": "sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        }
+    ]
+}
