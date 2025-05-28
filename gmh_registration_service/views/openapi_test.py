@@ -1,0 +1,58 @@
+from .._path import global_config_path
+import pytest
+from gmh_registration_service.config import Config
+from gmh_registration_service.server import create_app, setup_environment
+from starlette.testclient import TestClient
+from collections import namedtuple
+from contextlib import asynccontextmanager
+
+
+@pytest.fixture(scope="session")
+async def environment_session(tmp_path_factory):
+    data_path = tmp_path_factory.mktemp("data")
+    config_path = data_path / "config"
+    config_path.mkdir(parents=True)
+    import shutil
+
+    if not (global_config_path / "database.config").is_file():
+        raise RuntimeError(f"database.config not found in {global_config_path}")
+    shutil.copy(global_config_path / "database.config", config_path / "database.conf")
+
+    config = Config(data_path, development=True)
+    env = await setup_environment(config)
+    client = TestClient((await create_app(config=config, environment=env)))
+
+    return Environment(client, *env)
+
+
+@asynccontextmanager
+@pytest.fixture
+async def environment(environment_session):
+    pool = environment_session.pool
+    yield environment_session
+    # for table in ...:
+    #     do drop/truncate table(table)
+
+
+Environment = namedtuple(
+    "Environment",
+    ["client", "actions", "templates", "pool"],
+)
+
+import yaml
+from io import StringIO
+
+
+async def test_openapi(environment):
+    response = environment.client.get("/api/v1/openapi.yaml")
+    assert response.status_code == 200
+    parsed = yaml.safe_load(StringIO(response.text))
+    assert list(parsed.keys()) == [
+        "openapi",
+        "info",
+        "externalDocs",
+        "paths",
+        "servers",
+        "tags",
+        "components",
+    ]

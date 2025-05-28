@@ -49,14 +49,11 @@ async def setup_environment(config):
     actions.register_kwarg("templates", templates)
     actions.register_kwarg("pool", pool)
 
-    return actions, templates
+    return actions, templates, pool
 
 
 async def create_app(config, environment=None, **_):
-    (
-        actions,
-        _,
-    ) = environment or await setup_environment(config=config)
+    (actions, templates, pool) = environment or await setup_environment(config=config)
 
     # @contextlib.asynccontextmanager
     # async def lifespan(app):
