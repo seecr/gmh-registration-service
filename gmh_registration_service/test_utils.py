@@ -30,9 +30,14 @@ async def environment_session(tmp_path_factory):
 @pytest.fixture
 async def environment(environment_session):
     pool = environment_session.pool
+    with pool.get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
+            for table_name in ["registrant", "credentials"]:
+                cursor.execute(f"TRUNCATE TABLE {table_name}")
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 1; ")
+
     yield environment_session
-    # for table in ...:
-    #     do drop/truncate table(table)
 
 
 Environment = namedtuple(
