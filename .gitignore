@@ -1,2 +1,3 @@
 env
 *.egg-info
+gmh_registration_service/config-data/database.config
