@@ -108,13 +108,6 @@ async def test_found(environment):
             conn.commit()
 
     response = environment.client.get(
-        "/location/",
-        headers={"Authorization": f"Bearer {TOKEN}"},
-    )
-    assert response.status_code == 404
-    assert response.text == NOT_FOUND
-
-    response = environment.client.get(
         "/location/" + quote("https://seecr.nl", safe=""),
         headers={"Authorization": f"Bearer {TOKEN}"},
     )

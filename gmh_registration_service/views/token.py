@@ -4,6 +4,7 @@ import secrets
 import base64
 
 from gmh_registration_service.messages import INVALID_MESSAGE, INTERNAL_ERROR
+from gmh_registration_service.utils import select_query
 
 
 def random_token(size=48):
@@ -36,15 +37,13 @@ def _new_token(pool, username, password):
     if username is None or password is None:
         return None
 
-    results = []
-    with pool.get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT `org_prefix` FROM `credentials` WHERE `username` = %(username)s AND `password` = %(password)s;",
-                dict(username=username, password=password),
-            )
-            for hit in cursor:
-                results.append(dict(zip(["org_prefix"], hit)))
+    results = select_query(
+        pool,
+        ["org_prefix"],
+        "credentials",
+        "`username` = %(username)s AND `password` = %(password)s;",
+        dict(username=username, password=password),
+    )
 
     if len(results) == 0:
         return None
@@ -56,5 +55,6 @@ def _new_token(pool, username, password):
                 "UPDATE `credentials` SET `token`=%(token)s WHERE `username` = %(username)s AND `password` = %(password)s;",
                 dict(token=new_token, username=username, password=password),
             )
+            conn.commit()
 
     return new_token
