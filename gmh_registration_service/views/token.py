@@ -3,8 +3,7 @@ from starlette.responses import PlainTextResponse
 import secrets
 import base64
 
-INVALID_MESSAGE = "Authentication information is missing or invalid"
-INTERNAL_ERROR = "Internal server error"
+from gmh_registration_service.messages import INVALID_MESSAGE, INTERNAL_ERROR
 
 
 def random_token(size=48):

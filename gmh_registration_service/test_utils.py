@@ -33,7 +33,13 @@ async def environment(environment_session):
     with pool.get_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
-            for table_name in ["registrant", "credentials"]:
+            for table_name in [
+                "registrant",
+                "credentials",
+                "location",
+                "identifier",
+                "identifier_location",
+            ]:
                 cursor.execute(f"TRUNCATE TABLE {table_name}")
             cursor.execute("SET FOREIGN_KEY_CHECKS = 1; ")
 

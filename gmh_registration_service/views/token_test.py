@@ -1,6 +1,7 @@
-from ..test_utils import environment, environment_session
+from gmh_registration_service.test_utils import environment, environment_session
+from gmh_registration_service.messages import INVALID_MESSAGE, INTERNAL_ERROR
 
-from .token import INVALID_MESSAGE, INTERNAL_ERROR, random_token
+from .token import random_token
 
 
 async def test_random_token():
