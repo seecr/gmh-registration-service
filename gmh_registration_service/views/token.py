@@ -3,7 +3,11 @@ from starlette.responses import PlainTextResponse
 import secrets
 import base64
 
-from gmh_registration_service.messages import INVALID_MESSAGE, INTERNAL_ERROR
+from gmh_registration_service.messages import (
+    INTERNAL_ERROR,
+    INVALID_CREDENTIALS,
+    BAD_REQUEST,
+)
 from gmh_registration_service.utils import select_query
 
 
@@ -12,25 +16,31 @@ def random_token(size=48):
 
 
 async def token(request, pool, **kwargs):
-    async with request.form() as form:
-        username = form.get("username")
-        password = form.get("password")
+    if request.headers.get("content-type") != "application/json":
+        return PlainTextResponse(
+            content=BAD_REQUEST,
+            status_code=400,
+        )
 
-        try:
-            new_token = _new_token(pool, username, password)
-        except:
-            return PlainTextResponse(
-                content=INTERNAL_ERROR,
-                status_code=500,
-            )
+    user_credentials = await request.json()
+    username = user_credentials.get("username")
+    password = user_credentials.get("password")
 
-        if new_token is None:
-            return PlainTextResponse(
-                content=INVALID_MESSAGE,
-                status_code=401,
-            )
+    try:
+        new_token = _new_token(pool, username, password)
+    except Exception as e:
+        return PlainTextResponse(
+            content=INTERNAL_ERROR,
+            status_code=500,
+        )
 
-        return PlainTextResponse(content=new_token, status_code=200)
+    if new_token is None:
+        return PlainTextResponse(
+            content=INVALID_CREDENTIALS,
+            status_code=403,
+        )
+
+    return PlainTextResponse(content=new_token, status_code=200)
 
 
 def _new_token(pool, username, password):

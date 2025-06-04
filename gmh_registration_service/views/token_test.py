@@ -1,5 +1,9 @@
 from gmh_registration_service.test_utils import environment, environment_session
-from gmh_registration_service.messages import INVALID_MESSAGE, INTERNAL_ERROR
+from gmh_registration_service.messages import (
+    INVALID_CREDENTIALS,
+    INTERNAL_ERROR,
+    BAD_REQUEST,
+)
 
 from .token import random_token
 
@@ -13,16 +17,16 @@ async def test_supported_method(environment):
     assert response.status_code == 405
 
     response = environment.client.post("/token")
-    assert response.status_code == 401
-    assert response.text == INVALID_MESSAGE
+    assert response.status_code == 400
+    assert response.text == BAD_REQUEST
 
 
 async def test_get_token(environment):
     response = environment.client.post(
-        "/token", data={"username": "Bob", "password": "Secret"}
+        "/token", json={"username": "Bob", "password": "Secret"}
     )
-    assert response.status_code == 401
-    assert response.text == INVALID_MESSAGE
+    assert response.status_code == 403
+    assert response.text == INVALID_CREDENTIALS
 
     pool = environment.pool
     with pool.get_connection() as conn:
@@ -44,7 +48,12 @@ async def test_get_token(environment):
             conn.commit()
 
     response = environment.client.post(
-        "/token", data={"username": "Bob", "password": "Secret"}
+        "/token", content="username: Bob, password: Secret"
+    )
+    assert response.status_code == 400
+
+    response = environment.client.post(
+        "/token", json={"username": "Bob", "password": "Secret"}
     )
     assert response.status_code == 200
     assert len(response.text) == 64
@@ -53,7 +62,7 @@ async def test_get_token(environment):
 async def test_internal_server_error(environment):
     environment.pool.get_connection = None
     response = environment.client.post(
-        "/token", data={"username": "Bob", "password": "Secret"}
+        "/token", json={"username": "Bob", "password": "Secret"}
     )
     assert response.status_code == 500
     assert response.text == INTERNAL_ERROR

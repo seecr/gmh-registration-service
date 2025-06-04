@@ -1,3 +1,5 @@
 INVALID_MESSAGE = "Authentication information is missing or invalid"
+INVALID_CREDENTIALS = "Invalid credentials"
+BAD_REQUEST = "Bad request"
 INTERNAL_ERROR = "Internal server error"
 NOT_FOUND = "Object (location) not found"
