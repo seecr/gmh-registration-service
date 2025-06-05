@@ -4,26 +4,31 @@ from gmh_registration_service.test_utils import (
     insert_token,
     insert_location,
 )
+
+from gmh_registration_service.utils import get_locations
+
 from gmh_registration_service.messages import (
     URN_NBN_INVALID,
     URN_NBN_FORBIDDEN,
     URN_NBN_NOT_FOUND,
     INVALID_AUTH_INFO,
+    SUCCESS_CREATED_NEW,
 )
 
 from urllib.parse import quote
 
 
-def _test_auth_for_urls(client, urls):
+def _test_auth_for_urls(client, urls, method="get"):
+    client_method = client.get if method == "get" else client.post
     for url in urls:
-        response = client.get(**url)
+        response = client_method(**url)
         assert response.status_code == 401
         assert response.text == INVALID_AUTH_INFO
         assert "WWW-Authenticate" in response.headers
         assert response.headers.get("WWW-Authenticate") == "Bearer"
 
 
-async def test_get_nbn_auth(environment):
+async def test_get_nbn(environment):
     _test_auth_for_urls(
         environment.client,
         [
@@ -33,8 +38,6 @@ async def test_get_nbn_auth(environment):
         ],
     )
 
-
-async def test_get_nbn(environment):
     TOKEN = "THE_TOKEN"
     REQUESTED_NBN = "urn:nbn:nl:ui:42-DEADC0FFEE"
     registrant_id = insert_token(environment.pool, TOKEN, prefix="urn:nbn:nl:ui:42-")
@@ -88,7 +91,7 @@ async def test_get_nbn(environment):
     }
 
 
-async def test_get_nbn_locations_auth(environment):
+async def test_get_nbn_locations(environment):
     _test_auth_for_urls(
         environment.client,
         [
@@ -103,8 +106,6 @@ async def test_get_nbn_locations_auth(environment):
         ],
     )
 
-
-async def test_get_nbn_locations(environment):
     TOKEN = "THE_TOKEN"
     REQUESTED_NBN = "urn:nbn:nl:ui:42-DEADC0FFEE"
     registrant_id = insert_token(environment.pool, TOKEN, prefix="urn:nbn:nl:ui:42-")
@@ -153,3 +154,35 @@ async def test_get_nbn_locations(environment):
 
     assert response.status_code == 200
     assert response.json() == ["https://deadcoff.ee"]
+
+
+def test_nbn(environment):
+    pool = environment.pool
+
+    _test_auth_for_urls(
+        environment.client,
+        [
+            dict(url="/nbn"),
+            dict(url="/nbn", headers={"Authorization": "Basic 1234"}),
+            dict(url="/nbn", headers={"Authorization": "Bearer 1234"}),
+        ],
+        method="post",
+    )
+
+    TOKEN = "THE_TOKEN"
+    NBN = "urn:nbn:nl:ui:42-DEADC0FFEE"
+    registrant_id = insert_token(pool, TOKEN, prefix="urn:nbn:nl:ui:42-")
+
+    assert get_locations(pool, NBN, False) == []
+    response = environment.client.post(
+        "/nbn",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "identifier": "urn:nbn:nl:ui:42-DEADC0FFEE",
+            "locations": ["https://deadcoff.ee"],
+        },
+    )
+    assert get_locations(pool, NBN, False) == ["https://deadcoff.ee"]
+
+    assert response.status_code == 201
+    assert response.text == SUCCESS_CREATED_NEW

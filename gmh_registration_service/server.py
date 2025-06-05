@@ -90,6 +90,11 @@ async def create_app(config, environment=None, **_):
                 methods=["GET"],
             ),
             Route(
+                "/nbn",
+                endpoint=aw(VIEWS.nbn.nbn),
+                methods=["POST"],
+            ),
+            Route(
                 "/nbn/{identifier:str}",
                 endpoint=aw(VIEWS.nbn.nbn_get),
                 methods=["GET"],

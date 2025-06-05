@@ -96,9 +96,8 @@ def get_locations(pool, identifier, include_ltp):
         ["L.location_url", "IL.isFailover"],
         from_stmt="identifier I JOIN identifier_location IL ON I.identifier_id = IL.identifier_id JOIN location L ON L.location_id = IL.location_id",
         where_stmt=(
-            "I.identifier_value=%(identifier)s" + ""
-            if include_ltp
-            else " AND IL.isFailover=0"
+            "I.identifier_value=%(identifier)s"
+            + ("" if include_ltp else " AND IL.isFailover=0")
         ),
         order_by_stmt="IL.isFailover, IL.last_modified ASC",
         values=dict(identifier=identifier),
