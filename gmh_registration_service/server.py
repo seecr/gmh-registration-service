@@ -89,6 +89,16 @@ async def create_app(config, environment=None, **_):
                 endpoint=aw(VIEWS.location.location),
                 methods=["GET"],
             ),
+            Route(
+                "/nbn/{identifier:str}",
+                endpoint=aw(VIEWS.nbn.nbn_get),
+                methods=["GET"],
+            ),
+            Route(
+                "/nbn/{identifier:str}/locations",
+                endpoint=aw(VIEWS.nbn.nbn_get_locations),
+                methods=["GET"],
+            ),
         ],
         middleware=[
             # Middleware(SessionMiddleware, secret_key=config.session_secret_key),

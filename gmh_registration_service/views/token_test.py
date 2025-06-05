@@ -1,4 +1,8 @@
-from gmh_registration_service.test_utils import environment, environment_session
+from gmh_registration_service.test_utils import (
+    environment,
+    environment_session,
+    insert_token,
+)
 from gmh_registration_service.messages import (
     INVALID_CREDENTIALS,
     INTERNAL_ERROR,
@@ -29,23 +33,7 @@ async def test_get_token(environment):
     assert response.text == INVALID_CREDENTIALS
 
     pool = environment.pool
-    with pool.get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO registrant (registrant_groupid) VALUES (%(groupid)s)",
-                dict(groupid="GROUP_ID"),
-            )
-            registrant_id = cursor.lastrowid
-            cursor.execute(
-                "INSERT INTO credentials (registrant_id, org_prefix, username, password) VALUES (%(registrant_id)s, %(org_prefix)s, %(username)s, %(password)s)",
-                dict(
-                    registrant_id=registrant_id,
-                    org_prefix="SEECR",
-                    username="Bob",
-                    password="Secret",
-                ),
-            )
-            conn.commit()
+    insert_token(pool, token="token")
 
     response = environment.client.post(
         "/token", content="username: Bob, password: Secret"

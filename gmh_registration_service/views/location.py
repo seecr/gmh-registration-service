@@ -1,14 +1,7 @@
 from starlette.responses import PlainTextResponse, JSONResponse
 
-from gmh_registration_service.messages import INVALID_MESSAGE, NOT_FOUND
-from gmh_registration_service.utils import select_query
-
-
-def get_user_by_token(pool, token):
-    results = select_query(
-        pool, ["org_prefix"], "credentials", "token=%(token)s", dict(token=token)
-    )
-    return results[0] if len(results) == 1 else None
+from gmh_registration_service.messages import INVALID_AUTH_INFO, NOT_FOUND
+from gmh_registration_service.utils import select_query, get_user_by_token
 
 
 def get_nbn_by_location(pool, location):
@@ -27,13 +20,13 @@ async def location(request, pool, **kwargs):
         authorization := request.headers.get("authorization")
     ) is None or not authorization.startswith("Bearer "):
         return PlainTextResponse(
-            INVALID_MESSAGE, status_code=401, headers={"WWW-Authenticate": "Bearer"}
+            INVALID_AUTH_INFO, status_code=401, headers={"WWW-Authenticate": "Bearer"}
         )
 
     _, token = authorization.split(" ", 1)
     if get_user_by_token(pool, token) is None:
         return PlainTextResponse(
-            INVALID_MESSAGE, status_code=401, headers={"WWW-Authenticate": "Bearer"}
+            INVALID_AUTH_INFO, status_code=401, headers={"WWW-Authenticate": "Bearer"}
         )
 
     location = request.path_params.get("location")

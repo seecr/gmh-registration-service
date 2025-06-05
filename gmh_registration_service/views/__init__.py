@@ -1,3 +1,3 @@
 from swl.utils import Views
 
-VIEWS = Views(__name__, ["general", "openapi", "token", "location"])
+VIEWS = Views(__name__, ["general", "openapi", "token", "location", "nbn"])
