@@ -1,6 +1,5 @@
 import re
 
-from .database import get_user_by_token as _get_user_by_token
 from .messages import INVALID_AUTH_INFO
 
 from starlette.exceptions import HTTPException
@@ -23,7 +22,7 @@ def valid_location(location):
     return location_regex.match(location) is not None
 
 
-def get_user_by_token(request, pool):
+def get_user_by_token(request, database):
     if (
         authorization := request.headers.get("authorization")
     ) is None or not authorization.startswith("Bearer "):
@@ -34,7 +33,7 @@ def get_user_by_token(request, pool):
         )
 
     _, token = authorization.split(" ", 1)
-    if (user := _get_user_by_token(pool, token)) is None:
+    if (user := database.get_user_by_token(token)) is None:
         raise HTTPException(
             status_code=401,
             detail=INVALID_AUTH_INFO,

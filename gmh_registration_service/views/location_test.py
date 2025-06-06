@@ -35,7 +35,7 @@ async def test_auth(environment):
 
 async def test_not_found(environment):
     TOKEN = "THE_SECRET_TOKEN"
-    insert_token(environment.pool, TOKEN)
+    insert_token(environment.database, TOKEN)
 
     response = environment.client.get(
         "/location/",
@@ -54,9 +54,9 @@ async def test_not_found(environment):
 
 async def test_found(environment):
     TOKEN = "THE_SECRET_TOKEN"
-    registrant_id = insert_token(environment.pool, TOKEN)
+    registrant_id = insert_token(environment.database, TOKEN)
     insert_location(
-        environment.pool,
+        environment.database,
         identifier="URN:NBN:",
         location="https://seecr.nl",
         registrant=registrant_id,

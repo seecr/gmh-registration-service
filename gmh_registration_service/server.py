@@ -2,8 +2,6 @@ import jinja2
 import swl
 import logging
 
-from mysql.connector.pooling import MySQLConnectionPool
-
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -15,6 +13,8 @@ from starlette.templating import Jinja2Templates
 from . import VERSION
 from ._path import global_config_path, static_path, templates_path
 from .views import VIEWS
+
+from .database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,7 @@ async def setup_environment(config):
         )
     )
 
-    pool = MySQLConnectionPool(
-        pool_reset_session=True, pool_size=5, **config.database_config
-    )
+    database = Database(**config.database_config)
 
     templates.env.globals["register"] = actions.register
     templates.env.globals["VERSION"] = VERSION
@@ -47,19 +45,13 @@ async def setup_environment(config):
     settings = {"development": config.development}
     actions.register_kwarg("settings", settings)
     actions.register_kwarg("templates", templates)
-    actions.register_kwarg("pool", pool)
+    actions.register_kwarg("database", database)
 
-    return actions, templates, pool
+    return actions, templates, database
 
 
 async def create_app(config, environment=None, **_):
-    (actions, templates, pool) = environment or await setup_environment(config=config)
-
-    # @contextlib.asynccontextmanager
-    # async def lifespan(app):
-    #    await store.connect()
-    #    yield
-    #    await store.disconnect()
+    (actions, templates, _) = environment or await setup_environment(config=config)
 
     aw = actions.wrap
 
@@ -110,8 +102,5 @@ async def create_app(config, environment=None, **_):
                 methods=["GET"],
             ),
         ],
-        middleware=[
-            # Middleware(SessionMiddleware, secret_key=config.session_secret_key),
-        ],
-        # lifespan=lifespan,
+        middleware=[],
     )

@@ -26,31 +26,28 @@ async def test_supported_method(environment):
 
 
 async def test_get_token(environment):
+    client, _, _, database = environment
     response = environment.client.post(
         "/token", json={"username": "Bob", "password": "Secret"}
     )
     assert response.status_code == 403
     assert response.text == INVALID_CREDENTIALS
 
-    pool = environment.pool
-    insert_token(pool, token="token")
+    insert_token(database, token="token")
 
-    response = environment.client.post(
-        "/token", content="username: Bob, password: Secret"
-    )
+    response = client.post("/token", content="username: Bob, password: Secret")
     assert response.status_code == 400
 
-    response = environment.client.post(
-        "/token", json={"username": "Bob", "password": "Secret"}
-    )
+    response = client.post("/token", json={"username": "Bob", "password": "Secret"})
     assert response.status_code == 200
     assert len(response.text) == 64
 
 
 async def test_internal_server_error(environment):
-    environment.pool.get_connection = None
-    response = environment.client.post(
-        "/token", json={"username": "Bob", "password": "Secret"}
-    )
+    client, _, _, database = environment
+
+    database.select_query = None
+
+    response = client.post("/token", json={"username": "Bob", "password": "Secret"})
     assert response.status_code == 500
     assert response.text == INTERNAL_ERROR

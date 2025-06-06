@@ -18,33 +18,29 @@ from gmh_registration_service.utils import (
     valid_location,
     get_user_by_token,
 )
-from gmh_registration_service.database import (
-    has_ltp_location,
-    get_locations,
-    add_nbn_locations,
-    delete_nbn_locations,
-    is_resolvable_identifier,
-)
 
 
-async def _nbn_get_locations_by_identifier(request, pool, urn_nbn, format_answer):
-    user = get_user_by_token(request, pool)
+async def _nbn_get_locations_by_identifier(request, database, urn_nbn, format_answer):
+    user = get_user_by_token(request, database)
 
     if not valid_urn_nbn(urn_nbn):
         raise HTTPException(status_code=400, detail=URN_NBN_INVALID)
 
-    if not urn_nbn.lower().startswith(user["prefix"].lower()) and not has_ltp_location(
-        pool, identifier=urn_nbn, org_prefix=user["prefix"]
-    ):
+    if not urn_nbn.lower().startswith(
+        user["prefix"].lower()
+    ) and not database.has_ltp_location(identifier=urn_nbn, org_prefix=user["prefix"]):
         raise HTTPException(status_code=403, detail=URN_NBN_FORBIDDEN)
 
-    if len(locations := get_locations(pool, identifier=urn_nbn, include_ltp=True)) == 0:
+    if (
+        len(locations := database.get_locations(identifier=urn_nbn, include_ltp=True))
+        == 0
+    ):
         raise HTTPException(status_code=404, detail=URN_NBN_NOT_FOUND)
 
     return JSONResponse(format_answer(urn_nbn, locations))
 
 
-async def nbn_get(request, pool, **kwargs):
+async def nbn_get(request, database, **kwargs):
     def format_answer(identifier, locations):
         return {
             "identifier": identifier,
@@ -52,16 +48,16 @@ async def nbn_get(request, pool, **kwargs):
         }
 
     return await _nbn_get_locations_by_identifier(
-        request, pool, request.path_params.get("identifier"), format_answer
+        request, database, request.path_params.get("identifier"), format_answer
     )
 
 
-async def nbn_get_locations(request, pool, **kwargs):
+async def nbn_get_locations(request, database, **kwargs):
     def format_answer(identifier, locations):
         return [location["uri"] for location in locations]
 
     return await _nbn_get_locations_by_identifier(
-        request, pool, request.path_params.get("identifier"), format_answer
+        request, database, request.path_params.get("identifier"), format_answer
     )
 
 
@@ -83,8 +79,8 @@ def _validate_identifier_and_locations(user, identifier, locations):
         raise HTTPException(status_code=403, detail=URN_NBN_FORBIDDEN2)
 
 
-async def nbn(request, pool, **kwargs):
-    user = get_user_by_token(request, pool)
+async def nbn(request, database, **kwargs):
+    user = get_user_by_token(request, database)
 
     body = await request.json()
     identifier = body.get("identifier")
@@ -93,15 +89,15 @@ async def nbn(request, pool, **kwargs):
     _validate_identifier_and_locations(user, identifier, locations)
 
     # Determine if identifier is resolvable (already has locations associated)
-    if is_resolvable_identifier(pool, identifier):
+    if database.is_resolvable_identifier(identifier):
         raise HTTPException(status_code=409, detail=URN_NBN_CONFLICT)
 
-    add_nbn_locations(pool, identifier, locations, user)
+    database.add_nbn_locations(identifier, locations, user)
     return PlainTextResponse(SUCCESS_CREATED_NEW, status_code=201)
 
 
-async def nbn_update(request, pool, **kwargs):
-    user = get_user_by_token(request, pool)
+async def nbn_update(request, database, **kwargs):
+    user = get_user_by_token(request, database)
 
     body = await request.json()
     identifier = request.path_params["identifier"]
@@ -110,10 +106,10 @@ async def nbn_update(request, pool, **kwargs):
     _validate_identifier_and_locations(user, identifier, locations)
 
     # Determine if identifier is resolvable (already has locations associated)
-    if is_resolvable_identifier(pool, identifier):
-        delete_nbn_locations(pool, identifier, user)
-        add_nbn_locations(pool, identifier, locations, user)
+    if database.is_resolvable_identifier(identifier):
+        database.delete_nbn_locations(identifier, user)
+        database.add_nbn_locations(identifier, locations, user)
         return PlainTextResponse(SUCCESS_UPDATED, status_code=200)
 
-    add_nbn_locations(pool, identifier, locations, user)
+    database.add_nbn_locations(identifier, locations, user)
     return PlainTextResponse(SUCCESS_CREATED_NEW, status_code=201)
