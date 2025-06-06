@@ -1,6 +1,9 @@
 from mysql.connector.pooling import MySQLConnectionPool
 
 from contextlib import contextmanager
+from .utils import unfragment
+
+import bcrypt
 
 
 class Database:
@@ -14,12 +17,6 @@ class Database:
             database=database,
         )
 
-    def execute_statements(self, stmts):
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cursor:
-                for stmt in stmts:
-                    cursor.execute(stmt)
-
     @contextmanager
     def cursor(self, commit=True):
         with self._pool.get_connection() as conn:
@@ -27,6 +24,11 @@ class Database:
                 yield _cursor
             if commit is True:
                 conn.commit()
+
+    def execute_statements(self, stmts):
+        with self.cursor(commit=False) as cursor:
+            for stmt in stmts:
+                cursor.execute(stmt)
 
     def select_query(
         self,
@@ -53,11 +55,10 @@ class Database:
         if order_by_stmt != "":
             query = f"{query} ORDER BY {order_by_stmt}"
 
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(query, values)
-                for hit in cursor:
-                    results.append(dict(zip(result_fields, hit)))
+        with self.cursor(commit=False) as cursor:
+            cursor.execute(query, values)
+            for hit in cursor:
+                results.append(dict(zip(result_fields, hit)))
         return results
 
     def get_user_by_token(self, token):
@@ -111,7 +112,7 @@ class Database:
                 + ("" if include_ltp else " AND IL.isFailover=0")
             ),
             order_by_stmt="IL.isFailover, IL.last_modified ASC",
-            values=dict(identifier=identifier),
+            values=dict(identifier=unfragment(identifier)),
             target_fields=["uri", "ltp"],
         )
 
@@ -122,7 +123,7 @@ class Database:
                     ["I.identifier_id"],
                     from_stmt="identifier I INNER JOIN identifier_location IL ON I.identifier_id=IL.identifier_id",
                     where_stmt="I.identifier_value = %(identifier)s",
-                    values=dict(identifier=identifier),
+                    values=dict(identifier=unfragment(identifier)),
                     target_fields=["identifier_id"],
                 )
             )
@@ -130,29 +131,66 @@ class Database:
         )
 
     def add_nbn_locations(self, identifier, locations, user):
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cursor:
-                for location in locations:
-                    cursor.execute(
-                        "call addNbnLocation(%(identifier)s, %(location)s, %(registrant_id)s, %(isLTP)s)",
-                        dict(
-                            identifier=identifier,
-                            location=location,
-                            registrant_id=user["registrant_id"],
-                            isLTP=user["isLTP"],
-                        ),
-                    )
-            conn.commit()
-
-    def delete_nbn_locations(self, identifier, user):
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cursor:
+        with self.cursor() as cursor:
+            for location in locations:
                 cursor.execute(
-                    "call deleteNbnLocationsByRegistrantId(%(identifier)s, %(registrant_id)s, %(isLTP)s)",
+                    "call addNbnLocation(%(identifier)s, %(location)s, %(registrant_id)s, %(isLTP)s)",
                     dict(
-                        identifier=identifier,
+                        identifier=unfragment(identifier),
+                        location=location,
                         registrant_id=user["registrant_id"],
                         isLTP=user["isLTP"],
                     ),
                 )
-            conn.commit()
+
+    def delete_nbn_locations(self, identifier, user):
+        with self.cursor() as cursor:
+            cursor.execute(
+                "call deleteNbnLocationsByRegistrantId(%(identifier)s, %(registrant_id)s, %(isLTP)s)",
+                dict(
+                    identifier=unfragment(identifier),
+                    registrant_id=user["registrant_id"],
+                    isLTP=user["isLTP"],
+                ),
+            )
+
+    def get_nbn_by_location(self, location):
+        return self.select_query(
+            ["I.identifier_value"],
+            "identifier I JOIN identifier_location IL ON I.identifier_id = IL.identifier_id JOIN location L ON L.location_id = IL.location_id",
+            "L.location_url = %(location)s;",
+            dict(location=location),
+            target_fields=["identifier_value"],
+        )
+
+    def update_token(self, token, credentials_id):
+        with self.cursor() as cursor:
+            cursor.execute(
+                "UPDATE `credentials` SET `token`=%(token)s WHERE `credentials_id` = %(credentials_id)s",
+                dict(token=token, credentials_id=credentials_id),
+            )
+
+    def validate_user_credentials(self, username, password):
+        if username is None or password is None:
+            return None
+
+        matching_credentials = self.select_query(
+            ["credentials_id", "password"],
+            "credentials",
+            "`username` = %(username)s;",
+            dict(username=username),
+        )
+        if len(matching_credentials) != 1:
+            return None
+
+        credentials = matching_credentials[0]
+
+        if (
+            bcrypt.checkpw(
+                password.encode("utf-8"), credentials["password"].encode("utf-8")
+            )
+            is False
+        ):
+            return None
+
+        return credentials["credentials_id"]

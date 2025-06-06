@@ -22,6 +22,10 @@ def valid_location(location):
     return location_regex.match(location) is not None
 
 
+def unfragment(identifier):
+    return identifier.split("#", 1)[0]
+
+
 def get_user_by_token(request, database):
     if (
         authorization := request.headers.get("authorization")

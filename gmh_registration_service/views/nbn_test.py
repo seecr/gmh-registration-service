@@ -18,6 +18,8 @@ from gmh_registration_service.messages import (
     BAD_REQUEST,
 )
 
+from gmh_registration_service.utils import unfragment
+
 from urllib.parse import quote
 
 
@@ -282,7 +284,7 @@ def test_update_nbn_create(environment):
     database = environment.database
 
     TOKEN = "THE_TOKEN"
-    NBN = "urn:nbn:nl:ui:42-DEADC0FFEE"
+    NBN = "urn:nbn:nl:ui:42-DEADC0FFEE#aap"
     URL = "https://deadc0ff.ee"
 
     # Create NON-LTP user
@@ -329,7 +331,7 @@ def test_update_nbn_create(environment):
     response = environment.client.put(
         f"/nbn/{NBN}", headers={"Authorization": f"Bearer {TOKEN}"}, json=[URL]
     )
-    assert database.get_locations(NBN, False) == [{"uri": URL, "ltp": 0}]
+    assert database.get_locations(NBN, False) == [{"uri": unfragment(URL), "ltp": 0}]
 
     assert response.status_code == 201
     assert response.text == SUCCESS_CREATED_NEW
@@ -342,7 +344,9 @@ def test_update_nbn_create(environment):
     )
     assert response.status_code == 200
     assert response.text == SUCCESS_UPDATED
-    assert database.get_locations(NBN, False) == [{"uri": URL + "/update", "ltp": 0}]
+    assert database.get_locations(NBN, False) == [
+        {"uri": unfragment(URL) + "/update", "ltp": 0}
+    ]
 
 
 def test_nbn_update_as_LTP(environment):

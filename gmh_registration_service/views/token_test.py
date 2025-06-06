@@ -28,6 +28,7 @@ async def test_supported_method(environment):
 
 async def test_get_token(environment):
     client, _, _, database = environment
+
     response = client.post("/token", json={"username": "Bob", "password": "Secret"})
     assert response.status_code == 403
     assert response.text == INVALID_CREDENTIALS
