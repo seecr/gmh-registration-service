@@ -9,7 +9,7 @@ from gmh_registration_service.messages import (
     INVALID_CREDENTIALS,
     BAD_REQUEST,
 )
-from gmh_registration_service.utils import select_query
+from gmh_registration_service.database import select_query
 
 import logging
 

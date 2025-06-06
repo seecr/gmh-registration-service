@@ -4,41 +4,29 @@ from starlette.exceptions import HTTPException
 from gmh_registration_service.messages import (
     INVALID_AUTH_INFO,
     URN_NBN_FORBIDDEN,
+    URN_NBN_FORBIDDEN2,
     URN_NBN_INVALID,
+    URN_NBN_LOCATION_INVALID,
     URN_NBN_NOT_FOUND,
+    URN_NBN_CONFLICT,
     SUCCESS_CREATED_NEW,
 )
 
 from gmh_registration_service.utils import (
     valid_urn_nbn,
+    valid_location,
     get_user_by_token,
+)
+from gmh_registration_service.database import (
     has_ltp_location,
     get_locations,
+    add_nbn_locations,
+    is_resolvable_identifier,
 )
 
 
-def _get_user_by_token(request, pool):
-    if (
-        authorization := request.headers.get("authorization")
-    ) is None or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail=INVALID_AUTH_INFO,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    _, token = authorization.split(" ", 1)
-    if (user := get_user_by_token(pool, token)) is None:
-        raise HTTPException(
-            status_code=401,
-            detail=INVALID_AUTH_INFO,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
-
-
 async def _nbn_get_locations_by_identifier(request, pool, urn_nbn, format_answer):
-    user = _get_user_by_token(request, pool)
+    user = get_user_by_token(request, pool)
 
     if not valid_urn_nbn(urn_nbn):
         raise HTTPException(status_code=400, detail=URN_NBN_INVALID)
@@ -76,21 +64,32 @@ async def nbn_get_locations(request, pool, **kwargs):
 
 
 async def nbn(request, pool, **kwargs):
-    user = _get_user_by_token(request, pool)
+    user = get_user_by_token(request, pool)
 
     body = await request.json()
     identifier = body.get("identifier")
     locations = body.get("locations")
 
-    # validate identifier
-    # validate locations
-    # bad request if identifier/locations not valid
+    # Validate identifier
+    if not valid_urn_nbn(identifier):
+        raise HTTPException(status_code=400, detail=URN_NBN_LOCATION_INVALID)
 
-    # prefix match registrant prefix with identifier
-    # forbidden is no match
+    # Validate locations
+    for location in locations:
+        if not valid_location(location):
+            raise HTTPException(status_code=400, detail=URN_NBN_LOCATION_INVALID)
 
-    # determine if identifier is resolvable (already has locations associated)
+    # Prefix match registrant prefix with identifier; Forbidden is no match and user is not LTP
+    if (
+        not identifier.lower().startswith(user["prefix"].lower())
+        and not bool(user["isLTP"]) is True
+    ):
+        raise HTTPException(status_code=403, detail=URN_NBN_FORBIDDEN2)
 
-    await add_nbn_locations(identifier, locations, user)
+    # Determine if identifier is resolvable (already has locations associated)
+    if is_resolvable_identifier(pool, identifier):
+        raise HTTPException(status_code=409, detail=URN_NBN_CONFLICT)
+
+    add_nbn_locations(pool, identifier, locations, user)
 
     return PlainTextResponse(SUCCESS_CREATED_NEW, status_code=201)

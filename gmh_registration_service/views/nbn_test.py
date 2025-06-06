@@ -5,12 +5,15 @@ from gmh_registration_service.test_utils import (
     insert_location,
 )
 
-from gmh_registration_service.utils import get_locations
+from gmh_registration_service.database import get_locations
 
 from gmh_registration_service.messages import (
     URN_NBN_INVALID,
+    URN_NBN_LOCATION_INVALID,
     URN_NBN_FORBIDDEN,
+    URN_NBN_FORBIDDEN2,
     URN_NBN_NOT_FOUND,
+    URN_NBN_CONFLICT,
     INVALID_AUTH_INFO,
     SUCCESS_CREATED_NEW,
 )
@@ -171,18 +174,93 @@ def test_nbn(environment):
 
     TOKEN = "THE_TOKEN"
     NBN = "urn:nbn:nl:ui:42-DEADC0FFEE"
-    registrant_id = insert_token(pool, TOKEN, prefix="urn:nbn:nl:ui:42-")
+    URL = "https://deadc0ff.ee"
+
+    # Create NON-LTP user
+    insert_token(pool, TOKEN, prefix="urn:nbn:nl:ui:42-", isLTP=False)
+
+    # Invalid URN:NBN
+    response = environment.client.post(
+        "/nbn",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "identifier": "INVALID",
+            "locations": [URL],
+        },
+    )
+    assert response.status_code == 400
+    assert response.text == URN_NBN_LOCATION_INVALID
+
+    # Invalid location
+    response = environment.client.post(
+        "/nbn",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "identifier": NBN,
+            "locations": ["INVALID"],
+        },
+    )
+    assert response.status_code == 400
+    assert response.text == URN_NBN_LOCATION_INVALID
+
+    # Prefix of identifier does not match and current user is not LTP
+    response = environment.client.post(
+        "/nbn",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "identifier": "urn:nbn:nl:ui:43-DEADC0FFEE",
+            "locations": [URL],
+        },
+    )
+    assert response.status_code == 403
+    assert response.text == URN_NBN_FORBIDDEN2
 
     assert get_locations(pool, NBN, False) == []
     response = environment.client.post(
         "/nbn",
         headers={"Authorization": f"Bearer {TOKEN}"},
         json={
-            "identifier": "urn:nbn:nl:ui:42-DEADC0FFEE",
-            "locations": ["https://deadcoff.ee"],
+            "identifier": NBN,
+            "locations": [URL],
         },
     )
-    assert get_locations(pool, NBN, False) == ["https://deadcoff.ee"]
+    assert get_locations(pool, NBN, False) == [{"uri": URL, "ltp": 0}]
+
+    assert response.status_code == 201
+    assert response.text == SUCCESS_CREATED_NEW
+
+    # Identifier is already resolvable
+    response = environment.client.post(
+        "/nbn",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "identifier": NBN,
+            "locations": [URL],
+        },
+    )
+    assert response.status_code == 409
+    assert response.text == URN_NBN_CONFLICT
+
+
+def test_nbn_as_LTP(environment):
+    pool = environment.pool
+    TOKEN = "THE_TOKEN"
+    NBN = "urn:nbn:nl:ui:42-DEADC0FFEE"
+    URL = "https://deadc0ff.ee"
+
+    # Create NON-LTP user
+    insert_token(pool, TOKEN, prefix="urn:nbn:nl:ui:24-", isLTP=True)
+
+    assert get_locations(pool, NBN, True) == []
+    response = environment.client.post(
+        "/nbn",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "identifier": NBN,
+            "locations": [URL],
+        },
+    )
+    assert get_locations(pool, NBN, True) == [{"uri": URL, "ltp": 1}]
 
     assert response.status_code == 201
     assert response.text == SUCCESS_CREATED_NEW

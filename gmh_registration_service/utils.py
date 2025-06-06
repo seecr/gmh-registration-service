@@ -1,105 +1,43 @@
 import re
 
-urnnbnRegex = re.compile(
+from .database import get_user_by_token as _get_user_by_token
+from .messages import INVALID_AUTH_INFO
+
+from starlette.exceptions import HTTPException
+
+
+urnnbn_regex = re.compile(
     "^[uU][rR][nN]:[nN][bB][nN]:[nN][lL](:([a-zA-Z]{2}))?:\\d{2}-.+"
+)
+
+location_regex = re.compile(
+    "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)"
 )
 
 
 def valid_urn_nbn(identifier):
-    return urnnbnRegex.match(identifier) is not None
+    return urnnbn_regex.match(identifier) is not None
 
 
-def select_query(
-    pool,
-    fields,
-    from_stmt,
-    where_stmt,
-    values,
-    order_by_stmt="",
-    target_fields=None,
-    conv=None,
-):
-    if callable(conv):
-        result_fields = [conv(f) for f in fields]
-    else:
-        result_fields = target_fields or fields
-
-    if len(result_fields) != len(fields):
-        raise RuntimeError("result_fields and fields need to be same length")
-
-    results = []
-    select_stmt = ", ".join(fields)
-
-    query = f"SELECT {select_stmt} FROM {from_stmt} WHERE {where_stmt}"
-    if order_by_stmt != "":
-        query = f"{query} ORDER BY {order_by_stmt}"
-
-    with pool.get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(query, values)
-            for hit in cursor:
-                results.append(dict(zip(result_fields, hit)))
-    return results
+def valid_location(location):
+    return location_regex.match(location) is not None
 
 
-def get_user_by_token(pool, token):
-    result = select_query(
-        pool,
-        ["R.prefix", "R.isLTP", "R.registrant_id", "R.registrant_groupid"],
-        from_stmt="registrant R inner join credentials C ON R.registrant_id = C.registrant_id",
-        where_stmt="C.token = %(token)s",
-        values=dict(token=token),
-        conv=lambda f: f.split(".", 1)[-1],
-    )
+def get_user_by_token(request, pool):
+    if (
+        authorization := request.headers.get("authorization")
+    ) is None or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail=INVALID_AUTH_INFO,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    if len(result) > 1:
-        raise RuntimeError("Multiple users with same token!")
-
-    return result[0] if len(result) == 1 else None
-
-
-def has_ltp_location(pool, identifier, org_prefix):
-    registrant_id = get_registrant_id_by_org_prefix(pool, org_prefix)
-
-    results = select_query(
-        pool,
-        ["IL.isFailover"],
-        from_stmt="identifier_location IL JOIN identifier I ON IL.identifier_id = I.identifier_id JOIN identifier_registrant IR ON I.identifier_id = IR.identifier_id",
-        where_stmt="IL.isFailover = %(isFailover)s AND I.identifier_value = %(identifier_value)s AND IR.registrant_id = %(registrant_id)s",
-        values=dict(
-            identifier_value=identifier, registrant_id=registrant_id, isFailover="1"
-        ),
-    )
-
-    return len(results) > 0
-
-
-def get_registrant_id_by_org_prefix(pool, org_prefix):
-    registrant_id = 0
-    result = select_query(
-        pool,
-        ["registrant_id"],
-        from_stmt="registrant",
-        where_stmt="prefix=%(prefix)s",
-        values=dict(prefix=org_prefix),
-    )
-
-    if len(result) > 0:
-        registrant_id = result[0]["registrant_id"]
-
-    return registrant_id
-
-
-def get_locations(pool, identifier, include_ltp):
-    return select_query(
-        pool,
-        ["L.location_url", "IL.isFailover"],
-        from_stmt="identifier I JOIN identifier_location IL ON I.identifier_id = IL.identifier_id JOIN location L ON L.location_id = IL.location_id",
-        where_stmt=(
-            "I.identifier_value=%(identifier)s"
-            + ("" if include_ltp else " AND IL.isFailover=0")
-        ),
-        order_by_stmt="IL.isFailover, IL.last_modified ASC",
-        values=dict(identifier=identifier),
-        target_fields=["uri", "ltp"],
-    )
+    _, token = authorization.split(" ", 1)
+    if (user := _get_user_by_token(pool, token)) is None:
+        raise HTTPException(
+            status_code=401,
+            detail=INVALID_AUTH_INFO,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user

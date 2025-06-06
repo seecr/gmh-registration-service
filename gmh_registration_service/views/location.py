@@ -1,7 +1,10 @@
-from starlette.responses import PlainTextResponse, JSONResponse
+from starlette.responses import JSONResponse
+from starlette.exceptions import HTTPException
 
-from gmh_registration_service.messages import INVALID_AUTH_INFO, NOT_FOUND
-from gmh_registration_service.utils import select_query, get_user_by_token
+from gmh_registration_service.messages import NOT_FOUND
+
+from gmh_registration_service.database import select_query
+from gmh_registration_service.utils import get_user_by_token
 
 
 def get_nbn_by_location(pool, location):
@@ -16,24 +19,14 @@ def get_nbn_by_location(pool, location):
 
 
 async def location(request, pool, **kwargs):
-    if (
-        authorization := request.headers.get("authorization")
-    ) is None or not authorization.startswith("Bearer "):
-        return PlainTextResponse(
-            INVALID_AUTH_INFO, status_code=401, headers={"WWW-Authenticate": "Bearer"}
-        )
-
-    _, token = authorization.split(" ", 1)
-    if get_user_by_token(pool, token) is None:
-        return PlainTextResponse(
-            INVALID_AUTH_INFO, status_code=401, headers={"WWW-Authenticate": "Bearer"}
-        )
+    # Raises HTTPException if no authorization or valid user
+    get_user_by_token(request, pool)
 
     location = request.path_params.get("location")
     if len(location.strip()) == 0:
-        return PlainTextResponse(NOT_FOUND, status_code=404)
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
 
     nbns = get_nbn_by_location(pool, location)
     if len(nbns) == 0:
-        return PlainTextResponse(NOT_FOUND, status_code=404)
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     return JSONResponse([each["identifier_value"] for each in nbns])
