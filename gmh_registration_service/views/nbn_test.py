@@ -15,6 +15,7 @@ from gmh_registration_service.messages import (
     INVALID_AUTH_INFO,
     SUCCESS_CREATED_NEW,
     SUCCESS_UPDATED,
+    BAD_REQUEST,
 )
 
 from urllib.parse import quote
@@ -183,6 +184,13 @@ def test_nbn(environment):
     # Create NON-LTP user
     insert_token(database, TOKEN, prefix="urn:nbn:nl:ui:42-", isLTP=False)
 
+    # No JSON
+    response = environment.client.post(
+        "/nbn", headers={"Authorization": f"Bearer {TOKEN}"}, content="W00tW00t"
+    )
+    assert response.status_code == 400
+    assert response.text == BAD_REQUEST
+
     # Invalid URN:NBN
     response = environment.client.post(
         "/nbn",
@@ -298,6 +306,10 @@ def test_update_nbn_create(environment):
     assert response.text == URN_NBN_LOCATION_INVALID
 
     # Invalid location
+    response = environment.client.put(
+        f"/nbn/{NBN}", headers={"Authorization": f"Bearer {TOKEN}"}, content="INVALID"
+    )
+
     response = environment.client.put(
         f"/nbn/{NBN}", headers={"Authorization": f"Bearer {TOKEN}"}, json=["INVALID"]
     )

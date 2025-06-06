@@ -1,6 +1,6 @@
 import re
 
-from .messages import INVALID_AUTH_INFO
+from .messages import INVALID_AUTH_INFO, BAD_REQUEST
 
 from starlette.exceptions import HTTPException
 
@@ -40,3 +40,14 @@ def get_user_by_token(request, database):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+async def parse_body_as_json(request):
+    if request.headers.get("content-type") != "application/json":
+        raise HTTPException(status_code=400, detail=BAD_REQUEST)
+
+    try:
+        body = await request.json()
+    except:
+        raise HTTPException(status_code=400, detail=BAD_REQUEST)
+    return body

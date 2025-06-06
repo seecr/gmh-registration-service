@@ -17,19 +17,18 @@ async def test_random_token():
 
 
 async def test_supported_method(environment):
-    response = environment.client.get("/token")
+    client, _, _, _ = environment
+    response = client.get("/token")
     assert response.status_code == 405
 
-    response = environment.client.post("/token")
+    response = client.post("/token")
     assert response.status_code == 400
     assert response.text == BAD_REQUEST
 
 
 async def test_get_token(environment):
     client, _, _, database = environment
-    response = environment.client.post(
-        "/token", json={"username": "Bob", "password": "Secret"}
-    )
+    response = client.post("/token", json={"username": "Bob", "password": "Secret"})
     assert response.status_code == 403
     assert response.text == INVALID_CREDENTIALS
 

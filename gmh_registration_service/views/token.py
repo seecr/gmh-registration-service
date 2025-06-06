@@ -1,4 +1,5 @@
 from starlette.responses import PlainTextResponse
+from starlette.exceptions import HTTPException
 
 import secrets
 import base64
@@ -9,6 +10,7 @@ from gmh_registration_service.messages import (
     INVALID_CREDENTIALS,
     BAD_REQUEST,
 )
+from gmh_registration_service.utils import parse_body_as_json
 
 import logging
 
@@ -20,13 +22,8 @@ def random_token(size=48):
 
 
 async def token(request, database, **kwargs):
-    if request.headers.get("content-type") != "application/json":
-        return PlainTextResponse(
-            content=BAD_REQUEST,
-            status_code=400,
-        )
+    user_credentials = await parse_body_as_json(request)
 
-    user_credentials = await request.json()
     username = user_credentials.get("username")
     password = user_credentials.get("password")
 
@@ -34,17 +31,10 @@ async def token(request, database, **kwargs):
         new_token = _new_token(database, username, password)
     except Exception:
         logging.exception("token")
-
-        return PlainTextResponse(
-            content=INTERNAL_ERROR,
-            status_code=500,
-        )
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR)
 
     if new_token is None:
-        return PlainTextResponse(
-            content=INVALID_CREDENTIALS,
-            status_code=403,
-        )
+        raise HTTPException(status_code=403, detail=INVALID_CREDENTIALS)
 
     return PlainTextResponse(content=new_token, status_code=200)
 

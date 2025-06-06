@@ -3,6 +3,7 @@ from starlette.exceptions import HTTPException
 
 from gmh_registration_service.messages import (
     INVALID_AUTH_INFO,
+    BAD_REQUEST,
     URN_NBN_FORBIDDEN,
     URN_NBN_FORBIDDEN2,
     URN_NBN_INVALID,
@@ -17,6 +18,7 @@ from gmh_registration_service.utils import (
     valid_urn_nbn,
     valid_location,
     get_user_by_token,
+    parse_body_as_json,
 )
 
 
@@ -81,8 +83,8 @@ def _validate_identifier_and_locations(user, identifier, locations):
 
 async def nbn(request, database, **kwargs):
     user = get_user_by_token(request, database)
+    body = await parse_body_as_json(request)
 
-    body = await request.json()
     identifier = body.get("identifier")
     locations = body.get("locations")
 
@@ -98,8 +100,8 @@ async def nbn(request, database, **kwargs):
 
 async def nbn_update(request, database, **kwargs):
     user = get_user_by_token(request, database)
+    body = await parse_body_as_json(request)
 
-    body = await request.json()
     identifier = request.path_params["identifier"]
     locations = body
 
