@@ -11,6 +11,7 @@ URN_NBN_LOCATION_INVALID = (
 URN_NBN_CONFLICT = "Conflict, resource already exists"
 
 SUCCESS_CREATED_NEW = "Successful operation (created new)"
+SUCCESS_UPDATED = "OK (updated existing)"
 
 BAD_REQUEST = "Bad request"
 INTERNAL_ERROR = "Internal server error"

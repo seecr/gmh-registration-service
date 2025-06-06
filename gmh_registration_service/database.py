@@ -124,3 +124,17 @@ def add_nbn_locations(pool, identifier, locations, user):
                     ),
                 )
         conn.commit()
+
+
+def delete_nbn_locations(pool, identifier, user):
+    with pool.get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "call deleteNbnLocationsByRegistrantId(%(identifier)s, %(registrant_id)s, %(isLTP)s)",
+                dict(
+                    identifier=identifier,
+                    registrant_id=user["registrant_id"],
+                    isLTP=user["isLTP"],
+                ),
+            )
+        conn.commit()

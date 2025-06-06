@@ -10,6 +10,7 @@ from gmh_registration_service.messages import (
     URN_NBN_NOT_FOUND,
     URN_NBN_CONFLICT,
     SUCCESS_CREATED_NEW,
+    SUCCESS_UPDATED,
 )
 
 from gmh_registration_service.utils import (
@@ -21,6 +22,7 @@ from gmh_registration_service.database import (
     has_ltp_location,
     get_locations,
     add_nbn_locations,
+    delete_nbn_locations,
     is_resolvable_identifier,
 )
 
@@ -91,5 +93,37 @@ async def nbn(request, pool, **kwargs):
         raise HTTPException(status_code=409, detail=URN_NBN_CONFLICT)
 
     add_nbn_locations(pool, identifier, locations, user)
+    return PlainTextResponse(SUCCESS_CREATED_NEW, status_code=201)
 
+
+async def nbn_update(request, pool, **kwargs):
+    user = get_user_by_token(request, pool)
+
+    body = await request.json()
+    identifier = request.path_params["identifier"]
+    locations = body
+
+    # Validate identifier
+    if not valid_urn_nbn(identifier):
+        raise HTTPException(status_code=400, detail=URN_NBN_LOCATION_INVALID)
+
+    # Validate locations
+    for location in locations:
+        if not valid_location(location):
+            raise HTTPException(status_code=400, detail=URN_NBN_LOCATION_INVALID)
+
+    # Prefix match registrant prefix with identifier; Forbidden is no match and user is not LTP
+    if (
+        not identifier.lower().startswith(user["prefix"].lower())
+        and not bool(user["isLTP"]) is True
+    ):
+        raise HTTPException(status_code=403, detail=URN_NBN_FORBIDDEN2)
+
+    # Determine if identifier is resolvable (already has locations associated)
+    if is_resolvable_identifier(pool, identifier):
+        delete_nbn_locations(pool, identifier, user)
+        add_nbn_locations(pool, identifier, locations, user)
+        return PlainTextResponse(SUCCESS_UPDATED, status_code=200)
+
+    add_nbn_locations(pool, identifier, locations, user)
     return PlainTextResponse(SUCCESS_CREATED_NEW, status_code=201)

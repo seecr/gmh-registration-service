@@ -100,6 +100,11 @@ async def create_app(config, environment=None, **_):
                 methods=["GET"],
             ),
             Route(
+                "/nbn/{identifier:str}",
+                endpoint=aw(VIEWS.nbn.nbn_update),
+                methods=["PUT"],
+            ),
+            Route(
                 "/nbn/{identifier:str}/locations",
                 endpoint=aw(VIEWS.nbn.nbn_get_locations),
                 methods=["GET"],
