@@ -27,11 +27,45 @@
 import argparse
 import asyncio
 import pathlib
+import getpass
 
 from swl import configure_logging, uvicorn_main
 
 from gmh_registration_service.config import Config
 from gmh_registration_service.server import create_app
+from gmh_registration_service.database import Database
+
+
+def passwd():
+    parser = argparse.ArgumentParser(
+        prog="GMH Registration Service - passwd", description="Password management"
+    )
+    parser.add_argument(
+        "--data-path",
+        required=True,
+        type=pathlib.Path,
+        help="Path to data directory which will contain config directory and store data",
+    )
+
+    parser.add_argument(
+        "--username",
+        required=True,
+        type=str,
+        help="Username to set password for",
+    )
+    parser.add_argument(
+        "--groupid",
+        required=True,
+        type=str,
+        help="Groupid of registrant",
+    )
+
+    args = parser.parse_args()
+    config = Config(args.data_path, False)
+
+    database = Database(**config.database_config)
+    new_password = getpass.getpass("New password: ")
+    database.set_password(args.groupid, args.username, new_password)
 
 
 def main_app():

@@ -32,6 +32,7 @@ dynamic = ["version"]
 
 [project.scripts]
 gmh-registration-service-server = "gmh_registration_service.main:main_app"
+gmh-registration-service-passwd = "gmh_registration_service.main:passwd"
 
 [tool.setuptools]
 include-package-data = true

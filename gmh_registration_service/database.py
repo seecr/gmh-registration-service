@@ -129,6 +129,34 @@ class Database:
 
         return registrant_id
 
+    def get_registrant_id_by_groupid(self, groupid):
+        registrant_id = None
+        result = self.select_query(
+            ["registrant_id"],
+            from_stmt="registrant",
+            where_stmt="registrant_groupid=%(groupid)s",
+            values=dict(groupid=groupid),
+        )
+
+        if len(result) > 0:
+            registrant_id = result[0]["registrant_id"]
+
+        return registrant_id
+
+    def get_credentials_by_registrant_id(self, registrant_id):
+        response = None
+        result = self.select_query(
+            ["credentials_id"],
+            from_stmt="credentials",
+            where_stmt="registrant_id=%(registrant_id)s",
+            values=dict(registrant_id=registrant_id),
+        )
+
+        if len(result) > 0:
+            response = result[0]["credentials_id"]
+
+        return response
+
     def get_locations(self, identifier, include_ltp):
         return self.select_query(
             ["L.location_url", "IL.isFailover"],
@@ -220,3 +248,31 @@ class Database:
             return None
 
         return credentials["credentials_id"]
+
+    def set_password(self, groupid, username, password):
+        if (registrant_id := self.get_registrant_id_by_groupid(groupid)) is None:
+            raise RuntimeError(f"Registrant with groupid '{groupid}' not found")
+
+        hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+        if (
+            credentials_id := self.get_credentials_by_registrant_id(registrant_id)
+        ) is None:
+            with self.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO credentials (registrant_id, username, password) VALUES (%(registrant_id)s, %(username)s, %(password)s)",
+                    dict(
+                        registrant_id=registrant_id,
+                        username=username,
+                        password=hashed_password,
+                    ),
+                )
+        else:
+            with self.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE `credentials` SET `username`=%(username)s, `password`=%(password)s WHERE `credentials_id` = %(credentials_id)s",
+                    dict(
+                        username=username,
+                        password=hashed_password,
+                        credentials_id=credentials_id,
+                    ),
+                )

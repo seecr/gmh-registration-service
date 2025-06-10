@@ -90,6 +90,7 @@ async def nbn_get_locations(request, database, **kwargs):
 
 
 def _validate_identifier_and_locations(user, identifier, locations):
+    print("USER", user, flush=True)
     # Validate identifier
     if not valid_urn_nbn(identifier):
         raise HTTPException(status_code=400, detail=URN_NBN_LOCATION_INVALID)

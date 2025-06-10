@@ -1,0 +1,20 @@
+1. Get token:
+$ ./token
+
+
+2. Export received token as TOKEN
+$ export TOKEN=<token>
+
+
+3. Do queries:
+
+$ ./nbn_get.sh urn:nbn:nl:hs:10-001ddd0a-aca9-49ef-b103-0add250a6c6b
+RESPONSE: {"identifier":"urn:nbn:nl:hs:10-001ddd0a-aca9-49ef-b103-0add250a6c6b","locations":["https://research.hva.nl/en/publications/001ddd0a-aca9-49ef-b103-0add250a6c6b"]}
+
+$ ./nbn_get_locations.sh urn:nbn:nl:hs:10-001ddd0a-aca9-49ef-b103-0add250a6c6b
+RESPONSE: ["https://research.hva.nl/en/publications/001ddd0a-aca9-49ef-b103-0add250a6c6b"]
+
+$ ./location.sh https://research.hva.nl/en/publications/001ddd0a-aca9-49ef-b103-0add250a6c6b
+RESPONSE: ["urn:nbn:nl:hs:10-001ddd0a-aca9-49ef-b103-0add250a6c6b"]
+
+
