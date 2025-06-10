@@ -25,8 +25,8 @@
 ## end license ##
 
 from gmh_registration_service.test_utils import (
-    environment,
     environment_session,
+    environment,
     insert_token,
 )
 from gmh_registration_service.messages import (

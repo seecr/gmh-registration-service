@@ -31,7 +31,6 @@ from gmh_registration_service.config import Config
 from gmh_registration_service.server import create_app, setup_environment
 from starlette.testclient import TestClient
 from collections import namedtuple
-from contextlib import asynccontextmanager
 
 import bcrypt
 
@@ -59,7 +58,6 @@ async def environment_session(tmp_path_factory):
     return Environment(client, *env)
 
 
-@asynccontextmanager
 @pytest.fixture
 async def environment(environment_session):
     database = environment_session.database

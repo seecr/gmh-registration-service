@@ -19,6 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "asyncio >= 3.4.3, < 4",
+    "bcrypt >= 4.3.0, < 5",
     "Jinja2 >= 3.1.6, < 4",
     "mysql-connector-python >= 9.3.0, < 10",
     "packaging >= 24.2, < 25",
