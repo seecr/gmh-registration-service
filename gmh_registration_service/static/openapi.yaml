@@ -1,33 +1,49 @@
+## begin license ##
 #
-# Copyright (C) 2018 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
+# Gemeenschappelijke Metadata Harvester (GMH) Registration Service
+#  register NBN and urls
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Copyright (C) 2025 Koninklijke Bibliotheek (KB) https://www.kb.nl
+# Copyright (C) 2025 Seecr (Seek You Too B.V.) https://seecr.nl
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+# This file is part of "GMH-Registration-Service"
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# "GMH-Registration-Service" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
+# "GMH-Registration-Service" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "GMH-Registration-Service"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
 
 openapi: 3.0.3
 
 info:
   contact:
-    email: harvester@dans.knaw.nl
+    email: beheer@seecr.nl
   description: >-
     For easy retrieval of a publication or data, assigned with a Dutch NBN in the Netherlands, a service called <a href
     ='https://persistent-identifier.nl'>National Resolver</a> is available. This service is managed by <a href
-    ='https://dans.knaw.nl'>Data Archiving and Networked Services</a> (DANS) and <a href="https://www.kb.nl">KB, National Library of the Netherlands</a> (KB). Find out more about the <a href="https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn">'Registration Agency NBN'</a>.
+    ='https://seecr.nl'>Seecr</a> (SEECR) on behalf of <a href="https://www.kb.nl">KB, National Library of the Netherlands</a> (KB). Find out more about the <a href="https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn">'Registration Agency NBN'</a>.
   license:
     name: Apache License 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: NBN:Resolver
   version: 0.1.1
+
+servers:
+- description: Staging
+  url: https://resolver-ui.acc.kb.seecr.nl/gmh-registration-service/api/v1
+- description: Production
+  url: https://persistent-identifier.nl/v1
 
 externalDocs:
   description: GMH Registration Service on GitHub
@@ -192,12 +208,6 @@ paths:
           description: Invalid credentials
       tags:
         - API Token
-
-servers:
-  - description: (localhost)
-    url: /nbn
-  - description: (tomcat)
-    url: /gmh-registration-service/nbn
 
 tags:
   - name: URN:NBN identifier
