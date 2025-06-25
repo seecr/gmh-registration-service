@@ -52,6 +52,7 @@ WORKDIR /src
 
 ARG PSEUDO_VERSION
 RUN test -n "${PSEUDO_VERSION}"
+RUN sed "s/^  version:.*\$/  version: ${PSEUDO_VERSION}/" -i /src/gmh_registration_service/static/openapi.yaml
 RUN SETUPTOOLS_SCM_PRETEND_VERSION=${PSEUDO_VERSION} python3 -m pip install --editable .
 
 USER seecr
