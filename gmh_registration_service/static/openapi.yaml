@@ -28,26 +28,26 @@ openapi: 3.0.3
 
 info:
   contact:
-    email: beheer@seecr.nl
+    email: info+kb@seecr.nl
   description: >-
     For easy retrieval of a publication or data, assigned with a Dutch NBN in the Netherlands, a service called <a href
     ='https://persistent-identifier.nl'>National Resolver</a> is available. This service is managed by <a href
     ='https://seecr.nl'>Seecr</a> (SEECR) on behalf of <a href="https://www.kb.nl">KB, National Library of the Netherlands</a> (KB). Find out more about the <a href="https://www.kb.nl/organisatie/onderzoek-expertise/informatie-infrastructuur-diensten-voor-bibliotheken/registration-agency-nbn">'Registration Agency NBN'</a>.
   license:
-    name: Apache License 2.0
-    url: https://www.apache.org/licenses/LICENSE-2.0.html
+    name: GNU General Public License
+    url: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
   title: NBN:Resolver
   version: 0.1.1
 
 servers:
 - description: Staging
-  url: https://resolver-ui.acc.kb.seecr.nl/gmh-registration-service/api/v1
+  url: https://resolver-ui.acc.kb.seecr.nl/gmh-registration-service
 - description: Production
-  url: https://persistent-identifier.nl/v1
+  url: https://persistent-identifier.nl/gmh-registration-service
 
 externalDocs:
   description: GMH Registration Service on GitHub
-  url: 'https://github.com/DANS-KNAW/gmh-registration-service'
+  url: 'https://github.com/seecr/gmh-registration-service'
 
 paths:
   /nbn:
