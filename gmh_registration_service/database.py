@@ -31,62 +31,10 @@ from .utils import unfragment
 
 import bcrypt
 
+import gmh_common.database
 
-class Database:
-    def __init__(self, host, user, password, database):
-        self._pool = MySQLConnectionPool(
-            pool_reset_session=True,
-            pool_size=5,
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-        )
 
-    @contextmanager
-    def cursor(self, commit=True):
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as _cursor:
-                yield _cursor
-            if commit is True:
-                conn.commit()
-
-    def execute_statements(self, stmts):
-        with self.cursor(commit=False) as cursor:
-            for stmt in stmts:
-                cursor.execute(stmt)
-
-    def select_query(
-        self,
-        fields,
-        from_stmt,
-        where_stmt,
-        values,
-        order_by_stmt="",
-        target_fields=None,
-        conv=None,
-    ):
-        if callable(conv):
-            result_fields = [conv(f) for f in fields]
-        else:
-            result_fields = target_fields or fields
-
-        if len(result_fields) != len(fields):
-            raise RuntimeError("result_fields and fields need to be same length")
-
-        results = []
-        select_stmt = ", ".join(fields)
-
-        query = f"SELECT {select_stmt} FROM {from_stmt} WHERE {where_stmt}"
-        if order_by_stmt != "":
-            query = f"{query} ORDER BY {order_by_stmt}"
-
-        with self.cursor(commit=False) as cursor:
-            cursor.execute(query, values)
-            for hit in cursor:
-                results.append(dict(zip(result_fields, hit)))
-        return results
-
+class Database(gmh_common.database.Database):
     def get_user_by_token(self, token):
         result = self.select_query(
             ["R.prefix", "R.isLTP", "R.registrant_id", "R.registrant_groupid"],
@@ -157,19 +105,6 @@ class Database:
 
         return response
 
-    def get_locations(self, identifier, include_ltp):
-        return self.select_query(
-            ["L.location_url", "IL.isFailover"],
-            from_stmt="identifier I JOIN identifier_location IL ON I.identifier_id = IL.identifier_id JOIN location L ON L.location_id = IL.location_id",
-            where_stmt=(
-                "I.identifier_value=%(identifier)s"
-                + ("" if include_ltp else " AND IL.isFailover=0")
-            ),
-            order_by_stmt="IL.isFailover, IL.last_modified ASC",
-            values=dict(identifier=unfragment(identifier)),
-            target_fields=["uri", "ltp"],
-        )
-
     def is_resolvable_identifier(self, identifier):
         return (
             len(
@@ -185,28 +120,19 @@ class Database:
         )
 
     def add_nbn_locations(self, identifier, locations, user):
-        with self.cursor() as cursor:
-            for location in locations:
-                cursor.execute(
-                    "call addNbnLocation(%(identifier)s, %(location)s, %(registrant_id)s, %(isLTP)s)",
-                    dict(
-                        identifier=unfragment(identifier),
-                        location=location,
-                        registrant_id=user["registrant_id"],
-                        isLTP=user["isLTP"],
-                    ),
-                )
+        return super().add_nbn_locations(
+            identifier,
+            locations,
+            registrant_id=user["registrant_id"],
+            isLTP=user["isLTP"],
+        )
 
     def delete_nbn_locations(self, identifier, user):
-        with self.cursor() as cursor:
-            cursor.execute(
-                "call deleteNbnLocationsByRegistrantId(%(identifier)s, %(registrant_id)s, %(isLTP)s)",
-                dict(
-                    identifier=unfragment(identifier),
-                    registrant_id=user["registrant_id"],
-                    isLTP=user["isLTP"],
-                ),
-            )
+        return super().delete_nbn_locations(
+            identifier,
+            registrant_id=user["registrant_id"],
+            isLTP=user["isLTP"],
+        )
 
     def get_nbn_by_location(self, location):
         return self.select_query(

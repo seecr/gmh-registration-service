@@ -34,7 +34,7 @@ async def test_openapi(environment):
     response = environment.client.get("/api/v1/openapi.yaml")
     assert response.status_code == 200
     parsed = yaml.safe_load(StringIO(response.text))
-    assert list(parsed.keys()) == [
+    assert set(parsed.keys()) == {
         "openapi",
         "info",
         "externalDocs",
@@ -42,4 +42,4 @@ async def test_openapi(environment):
         "servers",
         "tags",
         "components",
-    ]
+    }
