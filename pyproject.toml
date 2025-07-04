@@ -20,13 +20,14 @@ classifiers = [
 dependencies = [
     "asyncio >= 3.4.3, < 4",
     "bcrypt >= 4.3.0, < 5",
+    "gmh-common >= 0.1.0, < 1",
     "Jinja2 >= 3.1.6, < 4",
     "mysql-connector-python >= 9.3.0, < 10",
     "packaging >= 24.2, < 25",
-    "pytest >= 8.4.0, < 9",
+    "pytest >= 8.4.1, < 9",
     "pytest-asyncio >= 0.26.0, < 1",
-    "starlette >= 0.47.0, < 1",
-    "swl >= 2.5.2, < 3",
+    "starlette >= 0.47.1, < 1",
+    "swl >= 2.5.3, < 3",
 ]
 dynamic = ["version"]
 
