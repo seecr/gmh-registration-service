@@ -32,11 +32,14 @@ if [ -z "${RESOLVER_URL}" ]; then
     exit 1
 fi
 
-read -s -p "Password: " PASSWD
+_USER="${RESOLVER_USER:-seecr}"
 
-TOKEN=$(wget --quiet \
+
+read -s -p "Password for ${_USER}: " PASSWD
+
+TOKEN=$(wget --verbose \
     -O- "${RESOLVER_URL}/token" \
-    --post-data='{"username": "seecr", "password": "'${PASSWD}'"}' \
+    --post-data="{\"username\": \"${_USER}\", \"password\": \"${PASSWD}\"}" \
     --header 'Content-type: application/json')
 
 echo "TOKEN: ${TOKEN}"
