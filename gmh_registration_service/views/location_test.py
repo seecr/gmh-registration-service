@@ -70,7 +70,7 @@ async def test_not_found(environment, caplog):
     )
     assert response.status_code == 404
     assert response.text == NOT_FOUND
-    assert caplog.records[0].msg == "GROUP_ID requests /location/"
+    assert caplog.records[0].msg == "'GROUP_ID' requests '/location/'"
 
     response = environment.client.get(
         "/location/" + quote("https://some.url", safe=""),

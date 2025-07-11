@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 async def location(request, database, **kwargs):
     # Raises HTTPException if no authorization or valid user
     user = get_user_by_token(request, database)
-    logger.info(f"{user['registrant_groupid']} requests {request.url.path}")
+    logger.info(f"{user['registrant_groupid']!r} requests {request.url.path!r}")
 
     location = request.path_params.get("location")
     if len(location.strip()) == 0:
