@@ -47,9 +47,14 @@ from gmh_registration_service.utils import (
     parse_body_as_json,
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def _nbn_get_locations_by_identifier(request, database, urn_nbn, format_answer):
     user = get_user_by_token(request, database)
+    logger.info(f"{user['registrant_groupid']} requests {request.url.path}")
 
     if not valid_urn_nbn(urn_nbn):
         raise HTTPException(status_code=400, detail=URN_NBN_INVALID)
@@ -110,6 +115,7 @@ def _validate_identifier_and_locations(user, identifier, locations):
 
 async def nbn(request, database, **kwargs):
     user = get_user_by_token(request, database)
+    logger.info(f"{user['registrant_groupid']} requests {request.url.path}")
     body = await parse_body_as_json(request)
 
     identifier = body.get("identifier")
@@ -127,6 +133,7 @@ async def nbn(request, database, **kwargs):
 
 async def nbn_update(request, database, **kwargs):
     user = get_user_by_token(request, database)
+    logger.info(f"{user['registrant_groupid']} requests {request.url.path}")
     body = await parse_body_as_json(request)
 
     identifier = request.path_params["identifier"]

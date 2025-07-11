@@ -23,7 +23,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 ## end license ##
-
+import logging
 from gmh_registration_service.test_utils import (
     environment,
     environment_session,
@@ -59,7 +59,8 @@ async def test_auth(environment):
     assert response.headers.get("WWW-Authenticate") == "Bearer"
 
 
-async def test_not_found(environment):
+async def test_not_found(environment, caplog):
+    caplog.set_level(logging.INFO)
     TOKEN = "THE_SECRET_TOKEN"
     insert_token(environment.database, TOKEN)
 
@@ -69,6 +70,7 @@ async def test_not_found(environment):
     )
     assert response.status_code == 404
     assert response.text == NOT_FOUND
+    assert caplog.records[0].msg == "GROUP_ID requests /location/"
 
     response = environment.client.get(
         "/location/" + quote("https://some.url", safe=""),

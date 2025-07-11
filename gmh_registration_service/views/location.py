@@ -30,10 +30,15 @@ from starlette.exceptions import HTTPException
 from gmh_registration_service.messages import NOT_FOUND
 from gmh_registration_service.utils import get_user_by_token
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def location(request, database, **kwargs):
     # Raises HTTPException if no authorization or valid user
-    get_user_by_token(request, database)
+    user = get_user_by_token(request, database)
+    logger.info(f"{user['registrant_groupid']} requests {request.url.path}")
 
     location = request.path_params.get("location")
     if len(location.strip()) == 0:
